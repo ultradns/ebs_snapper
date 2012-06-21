@@ -1,6 +1,7 @@
 # EbsSnapper
 
-Take snapshots of EBS volumes and keep them for a period of time.  We use it take nightly snapshots and retain them for a several days before they are purged.
+Take snapshots of EBS volumes and keep them for a period of time.  
+We use this to take nightly snapshots and retain them for several days before being purged.
 
 
 
