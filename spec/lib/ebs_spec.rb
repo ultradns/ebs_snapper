@@ -140,4 +140,17 @@ describe EbsSnapper::Ebs do
     ebs.purge_old_snapshots(ttl, region, 2)
   end
   
+  it "should flow through snapshot and purge" do
+    ebs = EbsSnapper::Ebs.new
+    ebs.stub(:tagged_volumes).and_return([{
+      :ttl => EbsSnapper::Ebs::TTL.new("1.day"),
+      :region => 'us-east-1',
+      :volume_id => 1
+    }])
+    
+    ebs.should_receive(:snapshot_volume).with(anything(), anything()).once.and_return()
+    ebs.should_receive(:purge_old_snapshots).with(anything(), anything(), anything()).once.and_return()
+
+    ebs.snapshot_and_purge()
+  end
 end

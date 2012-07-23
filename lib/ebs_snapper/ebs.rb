@@ -32,7 +32,7 @@ class EbsSnapper::Ebs
     # now snapshot the list
     tagged_volumes.each do |vol_info|
       snapshot_volume(vol_info[:region], vol_info[:volume_id])
-      purge_old_snapshots(vol_info[:region], vol_info[:volume_id])
+      purge_old_snapshots(vol_info[:ttl], vol_info[:region], vol_info[:volume_id])
     end
   end
   
