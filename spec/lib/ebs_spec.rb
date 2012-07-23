@@ -40,6 +40,42 @@ describe EbsSnapper::Ebs do
     vols[0][:region].id.should == region.id
     vols[0][:volume_id].should == tag.resource.id
     vols[0][:ttl].should_not == nil
+    
+    two_days_secs = EbsSnapper::Ebs::TTL.new().convert_to_seconds(0).to_i
+    span_begin = (Time.now.utc.to_i - two_days_secs) - 10
+    span_end = (Time.now.utc.to_i - two_days_secs) + 1
+    vols[0][:ttl].cut_off.should > span_begin
+    vols[0][:ttl].cut_off.should < span_end
+  end
+  
+  it "should use retention from the tag in a volume in a region" do
+    ebs = EbsSnapper::Ebs.new
+    
+    tag = OpenStruct.new
+    tag.resource = OpenStruct.new(:id => 1)
+    tag.value = "2.days"
+    
+    tags = [tag]
+    tags.stub(:filter).and_return(tags)
+    
+    region = OpenStruct.new
+    region.tags = tags
+    region.id = '999'
+    
+    ebs.stub(:each_region).and_yield(region)
+    
+    vols = ebs.tagged_volumes
+    vols.size.should == 1
+
+    vols[0][:region].id.should == region.id
+    vols[0][:volume_id].should == tag.resource.id
+    vols[0][:ttl].should_not == nil
+    
+    two_days_secs = EbsSnapper::Ebs::TTL.new().convert_to_seconds('2.days').to_i
+    span_begin = (Time.now.utc.to_i - two_days_secs) - 10
+    span_end = (Time.now.utc.to_i - two_days_secs) + 1
+    vols[0][:ttl].cut_off.should > span_begin
+    vols[0][:ttl].cut_off.should < span_end
   end
   
   it "should pruge old timestamps" do

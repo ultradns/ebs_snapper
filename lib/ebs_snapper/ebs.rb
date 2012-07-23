@@ -42,8 +42,13 @@ class EbsSnapper::Ebs
     each_region do |r|
       r.tags.filter('resource-type', 'volume').filter('key', @tag_name).each do |tag|
         # if the tag exists, it's using the default retention (TTL)
+        ttl_value = @retain
+        if tag.value != nil && !tag.value.strip.empty?
+          ttl_value = tag.value.strip
+        end
+        
         volumes << {
-          :ttl => TTL.new(@retain),
+          :ttl => TTL.new(ttl_value),
           :region => r,
           :volume_id => tag.resource.id # volume id
         }
