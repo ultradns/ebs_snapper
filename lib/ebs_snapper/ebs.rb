@@ -98,7 +98,7 @@ class EbsSnapper::Ebs
     end
     
     def purge?(timestamp)
-      timestamp < @cut_off
+      timestamp.to_i < @cut_off
     end
     
     def convert_to_seconds(ttl)

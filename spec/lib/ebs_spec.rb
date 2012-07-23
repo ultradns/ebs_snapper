@@ -46,6 +46,7 @@ describe EbsSnapper::Ebs do
     ttl = EbsSnapper::Ebs::TTL.new("1.day") # 1 day
     ttl.purge?(Time.now.utc.to_i - (86400 * 3)).should == true
     ttl.purge?(Time.now.utc.to_i - (86400 + 3601)).should == true
+    ttl.purge?("#{Time.now.utc.to_i - (86400 + 3601)}").should == true
   end
   
   it "shouldn't pruge new timestamps" do
