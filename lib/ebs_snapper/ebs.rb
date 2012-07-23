@@ -69,7 +69,7 @@ class EbsSnapper::Ebs
     region.snapshots.filter('volume-id', vol_id).filter('tag-key', @tag_name).each do |snapshot|
       unless snapshot.status == :pending
         ts = snapshot.tags[@tag_name]
-        if ts > 0 && ttl.purge?(ts)
+        if ttl.purge?(ts)
           @logger.info {"Purging #{vol_id} snapshot: #{snapshot}"}
           snapshot.delete
         end
@@ -98,7 +98,8 @@ class EbsSnapper::Ebs
     end
     
     def purge?(timestamp)
-      timestamp.to_i < @cut_off
+      ts = timestamp.to_i
+      ts > 0 && (ts < @cut_off)
     end
     
     def convert_to_seconds(ttl)
