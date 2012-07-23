@@ -75,7 +75,7 @@ class EbsSnapper::Ebs
       unless snapshot.status == :pending
         ts = snapshot.tags[@tag_name]
         if ttl.purge?(ts)
-          @logger.info {"Purging #{vol_id} snapshot: #{snapshot}"}
+          @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
           snapshot.delete
         end
       end
