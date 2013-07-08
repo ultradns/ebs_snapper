@@ -23,6 +23,8 @@ class EbsSnapper::CLI
     opts = parse(ARGV)
     ebs = EbsSnapper::Ebs.new(opts[:aws])
     ebs.snapshot_and_purge
+  rescue => e
+    @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
   end
   
   def self.load_config(opts, filename)

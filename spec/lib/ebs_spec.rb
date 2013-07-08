@@ -134,7 +134,7 @@ describe EbsSnapper::Ebs do
     
     snapshot = Object.new
     snapshot.should_receive(:tag).with(DEFAULT_TAG_NAME, 
-      hash_including(:value => RegexpMatcher.new(/^\d+/))) {true}
+      hash_including(:value => RSpec::Mocks::ArgumentMatchers::RegexpMatcher.new(/^\d+/))) {true}
       
     volume = OpenStruct.new
     volume.should_receive(:create_snapshot) {snapshot}
