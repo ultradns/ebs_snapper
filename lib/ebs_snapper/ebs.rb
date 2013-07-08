@@ -76,7 +76,11 @@ class EbsSnapper::Ebs
         ts = snapshot.tags[@tag_name]
         if ttl.purge?(ts)
           @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
-          snapshot.delete
+          begin
+            snapshot.delete
+          rescue => e
+            @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
+          end
         end
       end
     end
