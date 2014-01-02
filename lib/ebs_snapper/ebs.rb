@@ -19,10 +19,11 @@ class EbsSnapper::Ebs
   DEFAULT_TAG_NAME = 'Snapper'
   
   def initialize(opts = {})
-    AWS.config(
-      :access_key_id => opts[:access_key_id],
-      :secret_access_key => opts[:secret_access_key])
-      
+    if !opts[:secret_access_key].nil? && !opts[:access_key_id].nil?
+      AWS.config(:access_key_id => opts[:access_key_id],
+                 :secret_access_key => opts[:secret_access_key])
+    end
+
     @logger = opts[:logger] || Logger.new(STDOUT)
     @retain = opts[:retain]
     @tag_name = opts[:volume_tag] || DEFAULT_TAG_NAME # default
@@ -78,6 +79,7 @@ class EbsSnapper::Ebs
           @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
           begin
             snapshot.delete
+            sleep 1 # we need to slow down our processing..
           rescue => e
             @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
           end
