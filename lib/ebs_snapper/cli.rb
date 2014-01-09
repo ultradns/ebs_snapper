@@ -54,6 +54,7 @@ class EbsSnapper::CLI
     options[:verbose] = false
     options[:out] = ''
     options[:config] = nil
+    options[:pause_time] = 1
     
     opts = OptionParser.new do |opts|
       opts.banner = "Usage: ebs_snapper [options]"

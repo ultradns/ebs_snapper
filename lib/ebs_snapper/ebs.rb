@@ -17,6 +17,7 @@ require 'aws-sdk'
 class EbsSnapper::Ebs
   
   DEFAULT_TAG_NAME = 'Snapper'
+  DEFAULT_PAUSE_TIME = 0
   
   def initialize(opts = {})
     if !opts[:secret_access_key].nil? && !opts[:access_key_id].nil?
@@ -27,6 +28,7 @@ class EbsSnapper::Ebs
     @logger = opts[:logger] || Logger.new(STDOUT)
     @retain = opts[:retain]
     @tag_name = opts[:volume_tag] || DEFAULT_TAG_NAME # default
+    PausingEnumerable.pause_time = opts[:pause_time] || DEFAULT_PAUSE_TIME
   end
   
   def snapshot_and_purge
@@ -41,7 +43,8 @@ class EbsSnapper::Ebs
     volumes = []
     
     each_region do |r|
-      r.tags.filter('resource-type', 'volume').filter('key', @tag_name).each do |tag|
+      tags = r.tags.filter('resource-type', 'volume').filter('key', @tag_name)
+      PausingEnumerable.wrap(tags).each do |tag|
         # if the tag exists, it's using the default retention (TTL)
         ttl_value = @retain
         if tag.value != nil && !tag.value.strip.empty?
@@ -72,14 +75,14 @@ class EbsSnapper::Ebs
   end
   
   def purge_old_snapshots(ttl, region, vol_id)
-    region.snapshots.filter('volume-id', vol_id).filter('tag-key', @tag_name).each do |snapshot|
+    snapshots = region.snapshots.filter('volume-id', vol_id).filter('tag-key', @tag_name)
+    PausingEnumerable.wrap(snapshots).each do |snapshot|
       unless snapshot.status == :pending
         ts = snapshot.tags[@tag_name]
         if ttl.purge?(ts)
           @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
           begin
             snapshot.delete
-            sleep 1 # we need to slow down our processing..
           rescue => e
             @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
           end
@@ -87,8 +90,37 @@ class EbsSnapper::Ebs
       end
     end
   end
-  
-  
+
+  module PausingEnumerable
+    
+    def self.pause_time=(time)
+       @pause_time = time
+    end
+    
+    def self.pause_time
+       @pause_time || EbsSnapper::Ebs::DEFAULT_PAUSE_TIME
+    end
+    
+    def self.included(base)
+      base.class_eval do
+        if !method_defined?(:orig_each)
+          alias_method :orig_each, :each
+          def each(&block)
+            orig_each(&block)
+            sleep PausingEnumerable.pause_time # we need to slow down our processing..
+          end
+        end
+      end
+    end
+    
+    def self.wrap(enumerable)
+      enumerable.class.module_eval do
+        include PausingEnumerable
+      end
+      enumerable
+    end
+  end
+
   def each_region
     ec2.regions.each do |region|
       yield (region)

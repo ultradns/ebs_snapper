@@ -5,3 +5,4 @@ aws:
   volume_tag : 'Snapper' # tag to use in AWS for the EBS backup flags
   retain : '10.days'
 log_to: '/var/log/ebs_snapper.log'
+pause_time: 1
