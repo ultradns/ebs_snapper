@@ -23,7 +23,7 @@ class EbsSnapper::Ebs
   def initialize(opts = {}, dry_run)
     @dry_run = dry_run
     @logger = opts[:logger] || Logger.new(STDOUT)
-    max_retries = opts[:max_reties] || DEFAULT_MAX_RETRIES
+    max_retries = opts[:max_retries] || DEFAULT_MAX_RETRIES
     if !opts[:secret_access_key].nil? && !opts[:access_key_id].nil?
       AWS.config(:access_key_id => opts[:access_key_id],
                  :secret_access_key => opts[:secret_access_key],
@@ -39,6 +39,7 @@ class EbsSnapper::Ebs
     PausingEnumerable.pause_time = opts[:pause_time] || DEFAULT_PAUSE_TIME
     @logger.info "Initializing"
     @logger.info {"Dry run mode: #@dry_run"}
+    @logger.info {"AWS SDK max retries: #{AWS.config.max_retries}"}
   end
   
   def snapshot_and_purge
