@@ -21,7 +21,10 @@ class EbsSnapper::CLI
   
   def self.run  
     opts = parse(ARGV)
-    ebs = EbsSnapper::Ebs.new(opts[:aws])
+    if opts[:dry_run]
+       @logger.info "Dry run mode enabled"
+    end
+    ebs = EbsSnapper::Ebs.new(opts[:aws],opts[:dry_run])
     ebs.snapshot_and_purge
   rescue => e
     @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
@@ -49,6 +52,7 @@ class EbsSnapper::CLI
   def self.parse(args)
     options = {}
     options[:aws] = {}
+    options[:dry_run] = false
     options[:ultradns] = {}
     options[:log_to] = nil
     options[:verbose] = false
@@ -71,6 +75,10 @@ class EbsSnapper::CLI
 
       opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
         options[:verbose] = v
+      end
+
+      opts.on("-d", "--dry-run", "Dry run, will not create or delete snapshots") do
+        options[:dry_run] = true
       end
 
       opts.on_tail("-h", "--help", "Show this message") do

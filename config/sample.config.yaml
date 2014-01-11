@@ -4,5 +4,6 @@ aws:
   secret_access_key : 'ACCESS KEY'
   volume_tag : 'Snapper' # tag to use in AWS for the EBS backup flags
   retain : '10.days'
+  max_retries : 3
 log_to: '/var/log/ebs_snapper.log'
 pause_time: 1
