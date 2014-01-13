@@ -18,17 +18,28 @@ class EbsSnapper::Ebs
   
   DEFAULT_TAG_NAME = 'Snapper'
   DEFAULT_PAUSE_TIME = 0
+  DEFAULT_MAX_RETRIES = AWS.config.max_retries
   
-  def initialize(opts = {})
+  def initialize(opts = {}, dry_run)
+    @dry_run = dry_run
+    @logger = opts[:logger] || Logger.new(STDOUT)
+    max_retries = opts[:max_retries] || DEFAULT_MAX_RETRIES
     if !opts[:secret_access_key].nil? && !opts[:access_key_id].nil?
       AWS.config(:access_key_id => opts[:access_key_id],
-                 :secret_access_key => opts[:secret_access_key])
+                 :secret_access_key => opts[:secret_access_key],
+                 :logger => @logger,
+                 :max_retries => max_retries) 
+    else
+      AWS.config(:logger => @logger,
+                 :max_retries => max_retries) 
     end
 
-    @logger = opts[:logger] || Logger.new(STDOUT)
     @retain = opts[:retain]
     @tag_name = opts[:volume_tag] || DEFAULT_TAG_NAME # default
     PausingEnumerable.pause_time = opts[:pause_time] || DEFAULT_PAUSE_TIME
+    @logger.info "Initializing"
+    @logger.info {"Dry run mode: #@dry_run"}
+    @logger.info {"AWS SDK max retries: #{AWS.config.max_retries}"}
   end
   
   def snapshot_and_purge
@@ -62,13 +73,18 @@ class EbsSnapper::Ebs
   end
   
   def snapshot_volume(region, vol_id)
-    timestamp = Time.now.utc
-    @logger.info {"Snapshotting #{vol_id} at: #{timestamp}"}
     vol = region.volumes[vol_id]
     if vol != nil
-      snapshot = vol.create_snapshot("Snapper Backup #{timestamp}")
-      # tag the snapshot with the timestamp so we can look it up later for cleanup
-      snapshot.tag(@tag_name, :value => "#{timestamp.to_i}")
+    if @dry_run == true    
+        @logger.info {"Dry run - would have called vol.create_snapshot for volume #{vol_id}"}
+        @logger.info {"Dry run - would have called snapshot.tag for new snapshot of volume #{vol_id}"}
+      else 
+        timestamp = Time.now.utc
+        @logger.info {"Snapshotting #{vol_id} at: #{timestamp}"}
+        snapshot = vol.create_snapshot("Snapper Backup #{timestamp}")
+        # tag the snapshot with the timestamp so we can look it up later for cleanup
+        snapshot.tag(@tag_name, :value => "#{timestamp.to_i}")
+      end
     else
       @logger.error "Error: Volume #{vol_id} in Region: #{region} not found"
     end
@@ -80,9 +96,13 @@ class EbsSnapper::Ebs
       unless snapshot.status == :pending
         ts = snapshot.tags[@tag_name]
         if ttl.purge?(ts)
-          @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
           begin
-            snapshot.delete
+            if @dry_run == true
+              @logger.info {"Dry run - would have called snapshot.delete for snapshot #{snapshot.id} of volume #{vol_id}"}
+            else
+              @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
+              snapshot.delete
+            end
           rescue => e
             @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
           end
