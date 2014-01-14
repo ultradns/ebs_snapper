@@ -19,6 +19,37 @@ require 'ostruct'
 describe EbsSnapper::Ebs do 
   DEFAULT_TAG_NAME = EbsSnapper::Ebs::DEFAULT_TAG_NAME
   
+  
+  it "should run purge_old_snapshots in dry mode" do
+    ebs = EbsSnapper::Ebs.new({}, true)
+    ttl = EbsSnapper::Ebs::TTL.new("1.day") # 1 day
+    region = OpenStruct.new
+    
+    snapshot_old = OpenStruct.new
+    snapshot_old.status = :complete
+    snapshot_old.tags = {DEFAULT_TAG_NAME => Time.now.utc.to_i - (86400 * 2)}
+    snapshot_old.should_not_receive(:delete)
+    
+    region.snapshots = [snapshot_old]
+    region.snapshots.stub(:filter).and_return(region.snapshots)
+    
+    ebs.purge_old_snapshots(ttl, region, 2)
+  end
+  
+  it "should run snapshot_volume in dry mode" do
+    ebs = EbsSnapper::Ebs.new({}, true)
+    
+    region = OpenStruct.new
+    region.tags = []
+    region.id = '999'
+    
+    volume = OpenStruct.new
+    volume.should_not_receive(:create_snapshot)
+    region.volumes = {3 => volume}
+    
+    ebs.snapshot_volume(region, 3).should == true
+  end
+  
   it "should find tagged volumes in a region" do
     ebs = EbsSnapper::Ebs.new
     

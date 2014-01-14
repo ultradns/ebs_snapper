@@ -18,12 +18,11 @@ class EbsSnapper::Ebs
   
   DEFAULT_TAG_NAME = 'Snapper'
   DEFAULT_PAUSE_TIME = 0
-  DEFAULT_MAX_RETRIES = AWS.config.max_retries
   
-  def initialize(opts = {}, dry_run)
+  def initialize(opts = {}, dry_run = false)
     @dry_run = dry_run
     @logger = opts[:logger] || Logger.new(STDOUT)
-    max_retries = opts[:max_retries] || DEFAULT_MAX_RETRIES
+    max_retries = opts[:max_retries] || AWS.config.max_retries
     if !opts[:secret_access_key].nil? && !opts[:access_key_id].nil?
       AWS.config(:access_key_id => opts[:access_key_id],
                  :secret_access_key => opts[:secret_access_key],
@@ -38,7 +37,7 @@ class EbsSnapper::Ebs
     @tag_name = opts[:volume_tag] || DEFAULT_TAG_NAME # default
     PausingEnumerable.pause_time = opts[:pause_time] || DEFAULT_PAUSE_TIME
     @logger.info "Initializing"
-    @logger.info {"Dry run mode: #@dry_run"}
+    @logger.info {"Dry run mode: #{@dry_run}"}
     @logger.info {"AWS SDK max retries: #{AWS.config.max_retries}"}
   end
   
@@ -75,7 +74,7 @@ class EbsSnapper::Ebs
   def snapshot_volume(region, vol_id)
     vol = region.volumes[vol_id]
     if vol != nil
-    if @dry_run == true    
+      if dry_run?
         @logger.info {"Dry run - would have called vol.create_snapshot for volume #{vol_id}"}
         @logger.info {"Dry run - would have called snapshot.tag for new snapshot of volume #{vol_id}"}
       else 
@@ -97,7 +96,7 @@ class EbsSnapper::Ebs
         ts = snapshot.tags[@tag_name]
         if ttl.purge?(ts)
           begin
-            if @dry_run == true
+            if dry_run?
               @logger.info {"Dry run - would have called snapshot.delete for snapshot #{snapshot.id} of volume #{vol_id}"}
             else
               @logger.info {"Purging #{vol_id} snapshot: #{snapshot.id}"}
@@ -109,6 +108,10 @@ class EbsSnapper::Ebs
         end
       end
     end
+  end
+  
+  def dry_run?
+    @dry_run == true
   end
 
   module PausingEnumerable
@@ -140,6 +143,7 @@ class EbsSnapper::Ebs
       enumerable
     end
   end
+  
 
   def each_region
     ec2.regions.each do |region|

@@ -24,7 +24,7 @@ class EbsSnapper::CLI
     if opts[:dry_run]
        @logger.info "Dry run mode enabled"
     end
-    ebs = EbsSnapper::Ebs.new(opts[:aws],opts[:dry_run])
+    ebs = EbsSnapper::Ebs.new(opts[:aws], opts[:dry_run])
     ebs.snapshot_and_purge
   rescue => e
     @logger.error "Exception: #{e}\n" + e.backtrace().join("\n")
@@ -58,7 +58,6 @@ class EbsSnapper::CLI
     options[:verbose] = false
     options[:out] = ''
     options[:config] = nil
-    options[:pause_time] = 1
     
     opts = OptionParser.new do |opts|
       opts.banner = "Usage: ebs_snapper [options]"
