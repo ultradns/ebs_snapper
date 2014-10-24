@@ -15,11 +15,14 @@ Gem::Specification.new do |s|
   s.name          = "ebs_snapper"
   s.require_paths = ["lib"]
   s.version       = EbsSnapper::VERSION
-  
-  s.add_runtime_dependency "aws-sdk", "~> 1.31.3"
-  
+
+#  s.add_runtime_dependency "aws-sdk", "~> 2.0"
+  s.add_runtime_dependency "aws-sdk", '~> 1.57.0'
+  s.add_runtime_dependency "aws-sdk-v1"
+
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
+  s.add_development_dependency "rspec-mocks" 
   s.add_development_dependency "fakeweb"
-  
+
 end
